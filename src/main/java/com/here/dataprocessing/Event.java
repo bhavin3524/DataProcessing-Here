@@ -1,4 +1,4 @@
-package com.here.model;
+package com.here.dataprocessing;
 
 import java.util.Objects;
 

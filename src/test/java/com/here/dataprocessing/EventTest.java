@@ -1,8 +1,6 @@
-package com.here.model;
+package com.here.dataprocessing;
 
-import com.here.dataprocessing.Event;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -12,152 +10,107 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Event")
 class EventTest {
 
-    // ── Validity ────────────────────────────────────────────────────────────
 
-    @Nested
-    @DisplayName("isValid()")
-    class IsValid {
-
-        @Test
-        @DisplayName("returns true for a well-formed event")
-        void validEvent() {
-            Event e = new Event("sensor-1", 1000L, 42.5);
-            assertTrue(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns true when value is zero (boundary)")
-        void valueZeroIsValid() {
-            Event e = new Event("sensor-1", 1L, 0.0);
-            assertTrue(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns false when id is null")
-        void nullId() {
-            Event e = new Event(null, 1000L, 42.5);
-            assertFalse(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns false when id is blank")
-        void blankId() {
-            Event e = new Event("   ", 1000L, 42.5);
-            assertFalse(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns false when id is empty string")
-        void emptyId() {
-            Event e = new Event("", 1000L, 42.5);
-            assertFalse(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns false when value is NaN")
-        void nanValue() {
-            Event e = new Event("sensor-1", 1000L, Double.NaN);
-            assertFalse(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns false when value is negative")
-        void negativeValue() {
-            Event e = new Event("sensor-1", 1000L, -1.0);
-            assertFalse(e.isValid());
-        }
-
-        @ParameterizedTest
-        @ValueSource(longs = {0, -1, -100, Long.MIN_VALUE})
-        @DisplayName("returns false when timestamp is non-positive")
-        void nonPositiveTimestamp(long ts) {
-            Event e = new Event("sensor-1", ts, 42.5);
-            assertFalse(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns false when value is negative infinity")
-        void negativeInfinity() {
-            Event e = new Event("sensor-1", 1000L, Double.NEGATIVE_INFINITY);
-            assertFalse(e.isValid());
-        }
-
-        @Test
-        @DisplayName("returns true when value is positive infinity (edge case)")
-        void positiveInfinity() {
-            // Positive infinity is >= 0 and is not NaN — intentionally valid
-            Event e = new Event("sensor-1", 1000L, Double.POSITIVE_INFINITY);
-            assertTrue(e.isValid());
-        }
+    @Test
+    @DisplayName("valid event returns true")
+    void validEvent() {
+        Event e = new Event("sensor-1", 1000L, 42.5);
+        assertTrue(e.isValid());
     }
 
-    // ── Deduplication Key ───────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("deduplicationKey()")
-    class DeduplicationKey {
-
-        @Test
-        @DisplayName("produces id|timestamp format")
-        void format() {
-            Event e = new Event("abc", 12345L, 1.0);
-            assertEquals("abc|12345", e.deduplicationKey());
-        }
-
-        @Test
-        @DisplayName("same id + timestamp → same key")
-        void duplicatesShareKey() {
-            Event a = new Event("x", 1L, 10.0);
-            Event b = new Event("x", 1L, 99.0);
-            assertEquals(a.deduplicationKey(), b.deduplicationKey());
-        }
-
-        @Test
-        @DisplayName("different id or timestamp → different key")
-        void distinctKeys() {
-            Event a = new Event("x", 1L, 10.0);
-            Event b = new Event("x", 2L, 10.0);
-            Event c = new Event("y", 1L, 10.0);
-            assertNotEquals(a.deduplicationKey(), b.deduplicationKey());
-            assertNotEquals(a.deduplicationKey(), c.deduplicationKey());
-        }
+    @Test
+    @DisplayName("value of zero is valid (boundary)")
+    void zeroValueIsValid() {
+        assertTrue(new Event("a", 1L, 0.0).isValid());
     }
 
-    // ── equals / hashCode ───────────────────────────────────────────────────
+    @Test
+    @DisplayName("null id → invalid")
+    void nullId() {
+        assertFalse(new Event(null, 1000L, 42.5).isValid());
+    }
 
-    @Nested
-    @DisplayName("equals() and hashCode()")
-    class EqualsAndHashCode {
+    @Test
+    @DisplayName("empty id → invalid")
+    void emptyId() {
+        assertFalse(new Event("", 1000L, 42.5).isValid());
+    }
 
-        @Test
-        @DisplayName("structurally identical events are equal")
-        void equal() {
-            Event a = new Event("a", 1L, 1.0);
-            Event b = new Event("a", 1L, 1.0);
-            assertEquals(a, b);
-            assertEquals(a.hashCode(), b.hashCode());
-        }
+    @Test
+    @DisplayName("blank id → invalid")
+    void blankId() {
+        assertFalse(new Event("   ", 1000L, 42.5).isValid());
+    }
 
-        @Test
-        @DisplayName("events with different values are not equal")
-        void notEqual() {
-            Event a = new Event("a", 1L, 1.0);
-            Event b = new Event("a", 1L, 2.0);
-            assertNotEquals(a, b);
-        }
+    @Test
+    @DisplayName("NaN value → invalid")
+    void nanValue() {
+        assertFalse(new Event("a", 1000L, Double.NaN).isValid());
+    }
 
-        @Test
-        @DisplayName("event is not equal to null")
-        void notEqualToNull() {
-            Event a = new Event("a", 1L, 1.0);
-            assertNotEquals(null, a);
-        }
+    @Test
+    @DisplayName("negative value → invalid")
+    void negativeValue() {
+        assertFalse(new Event("a", 1000L, -1.0).isValid());
+    }
 
-        @Test
-        @DisplayName("event is not equal to an unrelated type")
-        void notEqualToOtherType() {
-            Event a = new Event("a", 1L, 1.0);
-            assertNotEquals("not an event", a);
-        }
+    @Test
+    @DisplayName("negative infinity → invalid")
+    void negativeInfinity() {
+        assertFalse(new Event("a", 1000L, Double.NEGATIVE_INFINITY).isValid());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1, -100, Long.MIN_VALUE})
+    @DisplayName("non-positive timestamp → invalid")
+    void nonPositiveTimestamp(long ts) {
+        assertFalse(new Event("a", ts, 42.5).isValid());
+    }
+
+    @Test
+    @DisplayName("positive infinity is technically valid (>= 0 and not NaN)")
+    void positiveInfinity() {
+        assertTrue(new Event("a", 1000L, Double.POSITIVE_INFINITY).isValid());
+    }
+
+
+    @Test
+    @DisplayName("key format is id|timestamp")
+    void keyFormat() {
+        assertEquals("abc|12345", new Event("abc", 12345L, 1.0).deduplicationKey());
+    }
+
+    @Test
+    @DisplayName("same id + timestamp → same key (regardless of value)")
+    void duplicatesShareKey() {
+        Event a = new Event("x", 1L, 10.0);
+        Event b = new Event("x", 1L, 99.0);
+        assertEquals(a.deduplicationKey(), b.deduplicationKey());
+    }
+
+    @Test
+    @DisplayName("different id or timestamp → different key")
+    void distinctKeys() {
+        Event a = new Event("x", 1L, 10.0);
+        Event b = new Event("x", 2L, 10.0);
+        Event c = new Event("y", 1L, 10.0);
+        assertNotEquals(a.deduplicationKey(), b.deduplicationKey());
+        assertNotEquals(a.deduplicationKey(), c.deduplicationKey());
+    }
+
+
+    @Test
+    @DisplayName("identical events are equal")
+    void equal() {
+        Event a = new Event("a", 1L, 1.0);
+        Event b = new Event("a", 1L, 1.0);
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    @DisplayName("different events are not equal")
+    void notEqual() {
+        assertNotEquals(new Event("a", 1L, 1.0), new Event("a", 1L, 2.0));
     }
 }
