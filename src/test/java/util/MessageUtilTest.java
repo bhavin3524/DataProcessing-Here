@@ -5,7 +5,7 @@ import java.util.ResourceBundle;
 
 public class MessageUtilTest {
     private static final ResourceBundle BUNDLE =
-            ResourceBundle.getBundle("messages");
+            ResourceBundle.getBundle("messages_test");
 
     private MessageUtilTest() {
     }
